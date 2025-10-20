@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace surveyjs_aspnet_mvc.Controllers
 {
@@ -22,12 +25,21 @@ namespace surveyjs_aspnet_mvc.Controllers
     [Route("/api")]
     public class ServiceController : Controller
     {
+        private JObject GetSurveyObject(SurveyDefinition survey)
+        {
+            var jobj = new JObject();
+            jobj["id"] = survey.id;
+            jobj["name"] = survey.name;
+            jobj["json"] = JsonConvert.DeserializeObject(survey.json) as JObject;
+            return jobj;
+        }
 
         [HttpGet("getActive")]
-        public JsonResult GetActive()
+        public ContentResult GetActive()
         {
             var db = new SessionStorage(HttpContext.Session);
-            return Json(db.GetSurveys());
+            var result = db.GetSurveys().Select(survey => GetSurveyObject(survey));
+            return Content(JsonConvert.SerializeObject(result), "application/json");
         }
 
         [HttpGet("getSurvey")]
@@ -53,11 +65,13 @@ namespace surveyjs_aspnet_mvc.Controllers
         }
 
         [HttpPost("changeJson")]
-        public JsonResult ChangeJson([FromBody] ChangeSurveyModel model)
+        public ContentResult ChangeJson([FromBody] ChangeSurveyModel model)
         {
             var db = new SessionStorage(HttpContext.Session);
             db.StoreSurvey(model.id, model.text);
-            return Json(db.GetSurvey(model.id));
+            var survey = db.GetSurvey(model.id);
+            var result = GetSurveyObject(survey);
+            return Content(JsonConvert.SerializeObject(result), "application/json");
         }
 
         [HttpGet("delete")]
