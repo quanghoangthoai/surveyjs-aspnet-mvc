@@ -19,7 +19,7 @@ jobs:
       - name: Set up .NET Core
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '3.1.301'
+          dotnet-version: '8.0'
           include-prerelease: true
 
       - name: Build with dotnet
@@ -55,3 +55,4 @@ jobs:
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EEDD17369FB84A4EAF35B6B3CF68EFF0 }}
           package: .
+
