@@ -11,6 +11,8 @@ namespace surveyjs_aspnet_mvc
         public string id { get; set; }
         public string name { get; set; }
         public string json { get; set; }
+        public bool isSupplierEvaluation { get; set; } = true;
+        public int? supplierId { get; set; }
 
         private static int currentId = 3;
         public static SurveyDefinition Create()

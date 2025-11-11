@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 
 namespace surveyjs_aspnet_mvc.Models
@@ -15,6 +16,10 @@ namespace surveyjs_aspnet_mvc.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public Survey? Survey { get; set; }
+
+        public int? SupplierId { get; set; }
+
+        public Supplier? Supplier { get; set; }
     }
 }
 

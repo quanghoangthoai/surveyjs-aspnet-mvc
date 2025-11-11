@@ -32,6 +32,18 @@ The backend stores survey definitions and responses in SQL Server using Entity F
 - To generate new migrations after making model changes, run `dotnet ef migrations add <MigrationName>`.
 - Apply pending migrations with `dotnet ef database update`.
 - The application seeds default surveys and sample results automatically on startup.
+- Supplier-specific tables (`Suppliers`, `SurveyResponses.SupplierId`) are created automatically starting from the `AddSuppliers` migration.
+
+## Supplier Workflow API
+
+Suppliers (NCC) can be defined ahead of time and linked to surveys so that respondents complete one supplier survey after another until the list is exhausted.
+
+- `GET /api/suppliers` &mdash; list suppliers in display order. Each entry indicates the linked survey (if any).
+- `POST /api/suppliers` &mdash; create a supplier. Payload: `{ "name": "...", "description": "...", "displayOrder": 1, "surveyId": "3" }`.
+- `POST /api/suppliers/assign` &mdash; attach an existing survey to a supplier (replaces previous associations if needed).
+- `GET /api/suppliers/next?currentSurveyId=2` &mdash; retrieve the next supplier survey in sequence. Omit `currentSurveyId` to get the first survey.
+- `GET /api/create?name=...&supplierId=1&isSupplierEvaluation=true` &mdash; create a new survey and bind it to a supplier. Set `isSupplierEvaluation=false` to create a standalone survey that is not tied to any supplier.
+- `POST /api/post` accepts an optional `supplierId` alongside the existing payload so responses can be attributed to a supplier.
 
 ## Client-Side App
 

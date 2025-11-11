@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Supplier Management</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f7fa;
+      color: #1f2933;
+    }
+    header {
+      background-color: #243b53;
+      color: #ffffff;
+      padding: 1.5rem 2rem;
+    }
+    main {
+      padding: 2rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.75rem;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid #cbd2d9;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #3e7bfa;
+      box-shadow: 0 0 0 3px rgba(62, 123, 250, 0.25);
+    }
+    button {
+      background-color: #3e7bfa;
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      margin-top: 0.75rem;
+    }
+    button:hover {
+      background-color: #2f64d6;
+    }
+    button:active {
+      transform: scale(0.99);
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem 1.5rem;
+    }
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .message {
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .message.success {
+      background-color: #ecfdf3;
+      color: #047857;
+      border: 1px solid #6ee7b7;
+    }
+    .message.error {
+      background-color: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+    }
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e4ebf5;
+    }
+    th {
+      background-color: #f0f4f8;
+      font-weight: 700;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background-color: #edf2ff;
+      color: #1d4ed8;
+    }
+    .muted {
+      color: #52606d;
+    }
+    @media (max-width: 640px) {
+      header {
+        padding: 1rem 1.25rem;
+      }
+      main {
+        padding: 1.25rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Supplier Management</h1>
+    <p>Define suppliers (NCC), link them to surveys, and control the order respondents will see them.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Create Supplier</h2>
+      <p class="muted">Provide supplier details and optionally link an existing survey. Leave “Survey” blank to assign later.</p>
+
+      <div id="feedback" role="status" aria-live="polite"></div>
+
+      <form id="supplierForm" novalidate>
+        <div class="form-grid">
+          <div>
+            <label for="supplierName">Name *</label>
+            <input id="supplierName" name="name" type="text" required placeholder="e.g. Supplier A" />
+          </div>
+
+          <div>
+            <label for="displayOrder">Display Order</label>
+            <input id="displayOrder" name="displayOrder" type="number" min="1" placeholder="Auto if empty" />
+          </div>
+
+          <div>
+            <label for="surveySelect">Link Survey</label>
+            <select id="surveySelect" name="surveyId">
+              <option value="">(No survey)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top: 1rem;">
+          <label for="supplierDescription">Description</label>
+          <textarea id="supplierDescription" name="description" placeholder="Additional notes or identifiers..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">Create Supplier</button>
+          <button type="button" id="resetButton">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Suppliers</h2>
+      <p class="muted">Suppliers are listed in processing order. After respondents finish one supplier survey, the next one is served automatically.</p>
+
+      <table aria-label="Suppliers table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Order</th>
+            <th>Linked Survey</th>
+          </tr>
+        </thead>
+        <tbody id="suppliersTableBody">
+          <tr>
+            <td colspan="5" class="muted">Loading suppliers...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const supplierForm = document.getElementById('supplierForm');
+    const feedback = document.getElementById('feedback');
+    const surveySelect = document.getElementById('surveySelect');
+    const suppliersTableBody = document.getElementById('suppliersTableBody');
+
+    const resetButton = document.getElementById('resetButton');
+
+    function showMessage(type, text) {
+      feedback.innerHTML = '';
+      if (!text) {
+        return;
+      }
+      const message = document.createElement('div');
+      message.className = `message ${type}`;
+      message.textContent = text;
+      feedback.appendChild(message);
+    }
+
+    async function fetchJson(url, options) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || response.statusText);
+      }
+      return response.json();
+    }
+
+    async function loadSurveys() {
+      surveySelect.disabled = true;
+      surveySelect.innerHTML = '<option value="">(No survey)</option>';
+      try {
+        const surveys = await fetchJson('/api/getActive');
+        surveys
+          .filter(s => s)
+          .forEach(survey => {
+            const option = document.createElement('option');
+            option.value = survey.id;
+            option.textContent = `${survey.name} (ID: ${survey.id})${survey.isSupplierEvaluation ? '' : ' — standalone'}`;
+            surveySelect.appendChild(option);
+          });
+      } catch (error) {
+        showMessage('error', `Unable to load surveys: ${error.message}`);
+      } finally {
+        surveySelect.disabled = false;
+      }
+    }
+
+    function renderSuppliers(suppliers) {
+      suppliersTableBody.innerHTML = '';
+      if (!suppliers.length) {
+        suppliersTableBody.innerHTML = '<tr><td colspan="5" class="muted">No suppliers defined yet.</td></tr>';
+        return;
+      }
+
+      suppliers.forEach((supplier, index) => {
+        const row = document.createElement('tr');
+        const linkedSurvey = supplier.surveyId
+          ? `<span class="tag">Survey ${supplier.surveyId}</span>`
+          : '<span class="muted">—</span>';
+        row.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${supplier.name}</td>
+          <td>${supplier.description || '<span class="muted">—</span>'}</td>
+          <td>${supplier.displayOrder}</td>
+          <td>${linkedSurvey}</td>
+        `;
+        suppliersTableBody.appendChild(row);
+      });
+    }
+
+    async function loadSuppliers() {
+      suppliersTableBody.innerHTML = '<tr><td colspan="5" class="muted">Loading suppliers...</td></tr>';
+      try {
+        const suppliers = await fetchJson('/api/suppliers');
+        renderSuppliers(suppliers);
+      } catch (error) {
+        suppliersTableBody.innerHTML = '<tr><td colspan="5" class="muted">Failed to load suppliers.</td></tr>';
+        showMessage('error', `Unable to load suppliers: ${error.message}`);
+      }
+    }
+
+    supplierForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      showMessage('', '');
+
+      const formData = new FormData(supplierForm);
+      const name = formData.get('name')?.trim();
+      const description = formData.get('description')?.trim();
+      const displayOrderRaw = formData.get('displayOrder')?.trim();
+      const surveyId = formData.get('surveyId')?.trim();
+
+      if (!name) {
+        showMessage('error', 'Supplier name is required.');
+        return;
+      }
+
+      const payload = {
+        name,
+        description: description || null,
+        displayOrder: displayOrderRaw ? Number(displayOrderRaw) : 0,
+        surveyId: surveyId || null
+      };
+
+      try {
+        const created = await fetchJson('/api/suppliers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        showMessage('success', `Supplier "${created.name}" created successfully.`);
+        supplierForm.reset();
+        await loadSuppliers();
+        await loadSurveys();
+      } catch (error) {
+        showMessage('error', `Failed to create supplier: ${error.message}`);
+      }
+    });
+
+    resetButton.addEventListener('click', () => {
+      supplierForm.reset();
+      showMessage('', '');
+    });
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await Promise.all([loadSurveys(), loadSuppliers()]);
+    });
+  </script>
+</body>
+</html>
+

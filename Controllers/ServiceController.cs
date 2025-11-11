@@ -15,6 +15,21 @@ namespace surveyjs_aspnet_mvc.Controllers
     {
         public string postId { get; set; }
         public string surveyResultText { get; set; }
+        public int? supplierId { get; set; }
+    }
+
+    public class CreateSupplierModel
+    {
+        public string name { get; set; }
+        public string description { get; set; }
+        public int displayOrder { get; set; }
+        public string surveyId { get; set; }
+    }
+
+    public class AssignSupplierSurveyModel
+    {
+        public int supplierId { get; set; }
+        public string surveyId { get; set; }
     }
 
     [Route("/api")]
@@ -52,9 +67,9 @@ namespace surveyjs_aspnet_mvc.Controllers
         }
 
         [HttpGet("create")]
-        public async Task<IActionResult> Create(string name)
+        public async Task<IActionResult> Create(string name = null, int? supplierId = null, bool isSupplierEvaluation = true)
         {
-            var survey = await _surveyRepository.CreateSurveyAsync(name);
+            var survey = await _surveyRepository.CreateSurveyAsync(name, isSupplierEvaluation, supplierId);
             return Json(survey);
         }
 
@@ -117,7 +132,7 @@ namespace surveyjs_aspnet_mvc.Controllers
                 return BadRequest("postId is required.");
             }
 
-            await _surveyRepository.PostResultAsync(model.postId, model.surveyResultText);
+            await _surveyRepository.PostResultAsync(model.postId, model.surveyResultText, model.supplierId);
             return Json(new { });
         }
 
@@ -131,6 +146,49 @@ namespace surveyjs_aspnet_mvc.Controllers
 
             var results = await _surveyRepository.GetResultsAsync(postId);
             return Json(results);
+        }
+
+        [HttpGet("suppliers")]
+        public async Task<IActionResult> GetSuppliers()
+        {
+            var suppliers = await _surveyRepository.GetSuppliersAsync();
+            return Json(suppliers);
+        }
+
+        [HttpPost("suppliers")]
+        public async Task<IActionResult> CreateSupplier([FromBody] CreateSupplierModel model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.name))
+            {
+                return BadRequest("Supplier name is required.");
+            }
+
+            var supplier = await _surveyRepository.CreateSupplierAsync(model.name, model.description, model.displayOrder, model.surveyId);
+            return Json(supplier);
+        }
+
+        [HttpPost("suppliers/assign")]
+        public async Task<IActionResult> AssignSupplierSurvey([FromBody] AssignSupplierSurveyModel model)
+        {
+            if (model == null || model.supplierId <= 0 || string.IsNullOrWhiteSpace(model.surveyId))
+            {
+                return BadRequest("supplierId and surveyId are required.");
+            }
+
+            var supplier = await _surveyRepository.AssignSurveyToSupplierAsync(model.supplierId, model.surveyId);
+            if (supplier == null)
+            {
+                return NotFound();
+            }
+
+            return Json(supplier);
+        }
+
+        [HttpGet("suppliers/next")]
+        public async Task<IActionResult> GetNextSupplierSurvey(string currentSurveyId = null)
+        {
+            var survey = await _surveyRepository.GetNextSupplierSurveyAsync(currentSurveyId);
+            return Json(survey);
         }
 
         // // GET api/values/5

@@ -19,11 +19,38 @@ namespace surveyjs_aspnet_mvc.Data
                     {
                         Name = surveyDefinition.name,
                         Json = surveyDefinition.json,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTime.UtcNow,
+                        IsSupplierEvaluation = surveyDefinition.isSupplierEvaluation
                     });
                 }
 
                 await context.SaveChangesAsync();
+            }
+
+            if (!context.Suppliers.Any())
+            {
+                var surveys = context.Surveys
+                    .Where(s => s.IsSupplierEvaluation)
+                    .OrderBy(s => s.Id)
+                    .ToList();
+
+                if (surveys.Any())
+                {
+                    int order = 1;
+                    foreach (var survey in surveys)
+                    {
+                        context.Suppliers.Add(new Supplier
+                        {
+                            Name = $"Supplier {order}",
+                            Description = $"Default supplier #{order}",
+                            DisplayOrder = order,
+                            SurveyId = survey.Id
+                        });
+                        order++;
+                    }
+
+                    await context.SaveChangesAsync();
+                }
             }
 
             if (!context.SurveyResponses.Any())
@@ -43,6 +70,11 @@ namespace surveyjs_aspnet_mvc.Data
                         if (int.TryParse(result.id, out var surveyId))
                         {
                             response.SurveyId = surveyId;
+                            var supplier = context.Suppliers.FirstOrDefault(s => s.SurveyId == surveyId);
+                            if (supplier != null)
+                            {
+                                response.SupplierId = supplier.Id;
+                            }
                         }
 
                         context.SurveyResponses.Add(response);
