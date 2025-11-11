@@ -9,7 +9,7 @@ namespace surveyjs_aspnet_mvc.Services
     {
         Task<IEnumerable<SurveyDefinition>> GetActiveAsync();
         Task<SurveyDefinition?> GetSurveyAsync(string surveyId);
-        Task<SurveyDefinition> CreateSurveyAsync(string? name, bool isSupplierEvaluation = true, int? supplierId = null);
+        Task<SurveyDefinition> CreateSurveyAsync(string? name, bool isSupplierEvaluation = true, int? supplierId = null, string? templateId = null);
         Task<SurveyDefinition?> UpdateSurveyJsonAsync(string surveyId, string json);
         Task<bool> ChangeNameAsync(string surveyId, string name);
         Task<bool> DeleteSurveyAsync(string surveyId);
@@ -19,6 +19,7 @@ namespace surveyjs_aspnet_mvc.Services
         Task<SupplierDefinition> CreateSupplierAsync(string name, string? description, int displayOrder, string? surveyId);
         Task<SupplierDefinition?> AssignSurveyToSupplierAsync(int supplierId, string surveyId);
         Task<SurveyDefinition?> GetNextSupplierSurveyAsync(string? currentSurveyId);
+        Task<IEnumerable<SurveyDefinition>> GetSurveyTemplatesAsync();
     }
 }
 

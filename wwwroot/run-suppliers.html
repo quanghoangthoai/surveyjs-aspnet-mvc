@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Supplier Evaluation Runner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://unpkg.com/survey-core@1.9.151/defaultV2.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/survey-core@1.9.151/survey.core.min.js"></script>
+  <script src="https://unpkg.com/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="https://unpkg.com/survey-jquery@1.9.151/survey.jquery.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light dark;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+      color: #1f2933;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 1.5rem 2rem;
+      background: #243b53;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.9rem;
+    }
+    header p {
+      margin: 0.35rem 0 0;
+      opacity: 0.85;
+    }
+    main {
+      flex: 1;
+      max-width: 960px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1.5rem 3rem;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 35px rgba(15, 23, 42, 0.12);
+      padding: 2rem;
+    }
+    #status {
+      margin-bottom: 1.25rem;
+      padding: 0.85rem 1.2rem;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 600;
+    }
+    #status.error {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+    #status.success {
+      background: #ecfdf3;
+      color: #047857;
+    }
+    .controls {
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .supplier-select {
+      margin-bottom: 1.75rem;
+      background: #f8fafc;
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      border: 1px solid rgba(36, 59, 83, 0.08);
+    }
+    .supplier-select h2 {
+      margin: 0 0 0.5rem;
+      font-size: 1.1rem;
+    }
+    .supplier-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 0.75rem;
+    }
+    .supplier-item {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      padding: 0.75rem 0.9rem;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: inset 0 0 0 1px rgba(36, 59, 83, 0.1);
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
+    }
+    .supplier-item:hover {
+      box-shadow: inset 0 0 0 1px #3b82f6;
+      transform: translateY(-1px);
+    }
+    .supplier-item input {
+      margin-top: 0.25rem;
+    }
+    .supplier-details {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .supplier-details strong {
+      font-size: 1rem;
+    }
+    .supplier-meta {
+      font-size: 0.85rem;
+      color: #52606d;
+    }
+    .supplier-item.disabled {
+      opacity: 0.5;
+      box-shadow: inset 0 0 0 1px rgba(36, 59, 83, 0.05);
+      pointer-events: none;
+    }
+    .muted {
+      color: #52606d;
+    }
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 0.65rem 1.4rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(120deg, #3b82f6, #1d4ed8);
+      box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 30px rgba(59, 130, 246, 0.45);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #surveyContainer {
+      min-height: 320px;
+    }
+    #finishedMessage {
+      padding: 2rem;
+      text-align: center;
+      font-size: 1.2rem;
+      border-radius: 12px;
+      background: #ecfdf3;
+      color: #047857;
+      display: none;
+    }
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: #52606d;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 640px) {
+      header {
+        padding: 1.25rem 1.25rem 1.5rem;
+      }
+      header h1 {
+        font-size: 1.5rem;
+      }
+      main {
+        margin: 1.5rem auto;
+        padding: 0 1rem 2rem;
+      }
+      .card {
+        padding: 1.5rem;
+      }
+      button {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Supplier Evaluation Runner</h1>
+    <p>Trình tự tự động: hoàn thành phiếu cho từng nhà cung cấp, hệ thống sẽ chuyển tiếp đến NCC kế tiếp.</p>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="supplier-select">
+        <h2>Chọn nhà cung cấp sẽ đánh giá</h2>
+        <p class="muted">Chỉ các NCC đã được gắn phiếu mới có thể chọn. Thứ tự thực hiện sẽ theo `DisplayOrder`.</p>
+        <div id="supplierList" class="supplier-list">
+          <div class="muted">Đang tải danh sách...</div>
+        </div>
+      </div>
+
+      <div id="status">Vui lòng chọn nhà cung cấp và nhấn "Bắt đầu".</div>
+      <div class="controls">
+        <button id="startButton" type="button">Bắt đầu</button>
+        <button id="restartButton" type="button" disabled>Chạy lại từ đầu</button>
+        <button id="skipButton" type="button" disabled>Bỏ qua NCC này</button>
+      </div>
+      <div id="surveyContainer"></div>
+      <div id="finishedMessage">Đã hoàn tất đánh giá tất cả nhà cung cấp. Cảm ơn bạn!</div>
+    </div>
+  </main>
+
+  <footer>
+    Survey runner powered by SurveyJS + NCC workflow API.
+  </footer>
+
+  <script>
+    Survey.StylesManager.applyTheme("defaultV2");
+
+    const statusEl = document.getElementById('status');
+    const startButton = document.getElementById('startButton');
+    const restartButton = document.getElementById('restartButton');
+    const skipButton = document.getElementById('skipButton');
+    const supplierListEl = document.getElementById('supplierList');
+    const surveyContainer = document.getElementById('surveyContainer');
+    const finishedMessage = document.getElementById('finishedMessage');
+
+    let suppliers = [];
+    let supplierQueue = [];
+    let queueIndex = 0;
+    let lastSelection = [];
+    let currentSurveyId = null;
+    let currentSupplierId = null;
+    let surveyModel = null;
+    let isLoading = false;
+    let runActive = false;
+
+    const orderSuppliers = (items) =>
+      items
+        .slice()
+        .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || a.id - b.id);
+
+    function runStarted() {
+      return runActive;
+    }
+
+    function setStatus(message, type = '') {
+      statusEl.textContent = message;
+      statusEl.className = type ? type : '';
+    }
+
+    function setLoading(loading) {
+      isLoading = loading;
+      startButton.disabled = loading || runStarted();
+      restartButton.disabled = loading || !runStarted();
+      skipButton.disabled = loading || !runStarted();
+    }
+
+    async function fetchJson(url, options) {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || response.statusText);
+      }
+      return response.json();
+    }
+
+    function disposeSurvey() {
+      if (surveyModel) {
+        surveyModel.onCompleting.removeAllListeners();
+        surveyModel.onComplete.removeAllListeners();
+      }
+      surveyModel = null;
+      surveyContainer.innerHTML = '';
+    }
+
+    function renderSupplierList() {
+      if (!supplierListEl) {
+        return;
+      }
+      supplierListEl.innerHTML = '';
+      if (!suppliers.length) {
+        supplierListEl.innerHTML = '<div class="muted">Chưa có nhà cung cấp nào.</div>';
+        return;
+      }
+
+      const ordered = orderSuppliers(suppliers);
+      ordered.forEach((supplier) => {
+        const wrapper = document.createElement('label');
+        wrapper.className = `supplier-item${supplier.surveyId ? '' : ' disabled'}`;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = supplier.id;
+        checkbox.id = `supplier-${supplier.id}`;
+        if (!supplier.surveyId) {
+          checkbox.disabled = true;
+        } else if (lastSelection.includes(supplier.id)) {
+          checkbox.checked = true;
+        }
+
+        const details = document.createElement('div');
+        details.className = 'supplier-details';
+
+        const nameEl = document.createElement('strong');
+        nameEl.textContent = supplier.name;
+        details.appendChild(nameEl);
+
+        const metaEl = document.createElement('div');
+        metaEl.className = 'supplier-meta';
+        metaEl.textContent = supplier.surveyId
+          ? `Survey ID ${supplier.surveyId} · DisplayOrder ${supplier.displayOrder}`
+          : 'Chưa gắn survey';
+        details.appendChild(metaEl);
+
+        if (supplier.description) {
+          const descEl = document.createElement('div');
+          descEl.className = 'muted';
+          descEl.textContent = supplier.description;
+          details.appendChild(descEl);
+        }
+
+        wrapper.appendChild(checkbox);
+        wrapper.appendChild(details);
+        supplierListEl.appendChild(wrapper);
+      });
+    }
+
+    async function loadSuppliersList() {
+      supplierListEl.innerHTML = '<div class="muted">Đang tải danh sách...</div>';
+      try {
+        const result = await fetchJson('/api/suppliers');
+        suppliers = Array.isArray(result) ? result : [];
+        renderSupplierList();
+      } catch (error) {
+        supplierListEl.innerHTML = `<div class="muted">Không tải được danh sách NCC: ${error.message}</div>`;
+      }
+    }
+
+    function collectSelection() {
+      const checkedIds = Array.from(
+        supplierListEl.querySelectorAll('input[type="checkbox"]:checked')
+      ).map((input) => Number(input.value));
+      return orderSuppliers(
+        suppliers.filter((supplier) => checkedIds.includes(supplier.id) && supplier.surveyId)
+      );
+    }
+
+    function prepareQueue(selection) {
+      supplierQueue = selection.map((supplier) => ({
+        supplierId: supplier.id,
+        supplierName: supplier.name,
+        surveyId: supplier.surveyId,
+        displayOrder: supplier.displayOrder
+      }));
+      queueIndex = 0;
+      runActive = supplierQueue.length > 0;
+    }
+
+    async function loadSurveyForCurrentIndex() {
+      if (queueIndex >= supplierQueue.length) {
+        runActive = false;
+        disposeSurvey();
+        currentSurveyId = null;
+        currentSupplierId = null;
+        finishedMessage.style.display = 'block';
+        setStatus('Đã hoàn tất đánh giá các nhà cung cấp đã chọn.', 'success');
+        setLoading(false);
+        startButton.disabled = false;
+        restartButton.disabled = !lastSelection.length;
+        skipButton.disabled = true;
+        return;
+      }
+
+      const item = supplierQueue[queueIndex];
+      try {
+        setLoading(true);
+        disposeSurvey();
+        finishedMessage.style.display = 'none';
+        setStatus(
+          `Đang đánh giá: ${item.supplierName} (${queueIndex + 1}/${supplierQueue.length})`
+        );
+
+        const surveyDef = await fetchJson(`/api/getSurvey?surveyId=${encodeURIComponent(item.surveyId)}`);
+        if (!surveyDef || !surveyDef.json) {
+          throw new Error('Survey không tồn tại hoặc chưa có nội dung.');
+        }
+
+        currentSurveyId = surveyDef.id;
+        currentSupplierId = item.supplierId;
+
+        const surveyJson =
+          typeof surveyDef.json === 'string' ? JSON.parse(surveyDef.json) : surveyDef.json;
+        surveyModel = new Survey.Model(surveyJson);
+
+        surveyModel.onComplete.add(async (sender) => {
+          const results = sender.data;
+          try {
+            await fetchJson('/api/post', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                postId: currentSurveyId,
+                surveyResultText: JSON.stringify(results),
+                supplierId: currentSupplierId
+              })
+            });
+            setStatus('Đã lưu kết quả, chuyển sang NCC tiếp theo...');
+            queueIndex += 1;
+            await loadSurveyForCurrentIndex();
+          } catch (error) {
+            setStatus(`Không thể lưu kết quả: ${error.message}`, 'error');
+          }
+        });
+
+        $(surveyContainer).Survey({ model: surveyModel });
+        skipButton.disabled = false;
+        restartButton.disabled = false;
+      } catch (error) {
+        setStatus(`Không tải được phiếu: ${error.message}`, 'error');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function startRun(useLastSelection = false) {
+      const selection = useLastSelection
+        ? orderSuppliers(
+            suppliers.filter((supplier) => lastSelection.includes(supplier.id) && supplier.surveyId)
+          )
+        : collectSelection();
+
+      if (!selection.length) {
+        setStatus(
+          'Vui lòng chọn ít nhất một nhà cung cấp đã gắn phiếu để bắt đầu đánh giá.',
+          'error'
+        );
+        return;
+      }
+
+      if (!useLastSelection) {
+        lastSelection = selection.map((supplier) => supplier.id);
+      }
+
+      prepareQueue(selection);
+      if (!supplierQueue.length) {
+        setStatus('Các nhà cung cấp được chọn chưa có phiếu để đánh giá.', 'error');
+        return;
+      }
+
+      setStatus('Đang tải NCC đầu tiên...');
+      await loadSurveyForCurrentIndex();
+    }
+
+    startButton.addEventListener('click', async () => {
+      await startRun(false);
+    });
+
+    restartButton.addEventListener('click', async () => {
+      if (!lastSelection.length) {
+        setStatus('Chưa có lần chạy trước đó để khởi động lại.', 'error');
+        return;
+      }
+      queueIndex = 0;
+      runActive = false;
+      await startRun(true);
+    });
+
+    skipButton.addEventListener('click', async () => {
+      if (!runStarted()) {
+        return;
+      }
+      setStatus('Đã bỏ qua NCC hiện tại, đang chuyển sang NCC tiếp theo...');
+      queueIndex += 1;
+      await loadSurveyForCurrentIndex();
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSuppliersList();
+    });
+  </script>
+</body>
+</html>
+

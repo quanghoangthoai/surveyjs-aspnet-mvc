@@ -38,11 +38,16 @@ The backend stores survey definitions and responses in SQL Server using Entity F
 
 Suppliers (NCC) can be defined ahead of time and linked to surveys so that respondents complete one supplier survey after another until the list is exhausted.
 
+- Static helper pages:
+  - `/suppliers.html` lets admins manage suppliers and create surveys.
+  - `/run-suppliers.html` runs the sequential evaluation flow described below.
+
 - `GET /api/suppliers` &mdash; list suppliers in display order. Each entry indicates the linked survey (if any).
 - `POST /api/suppliers` &mdash; create a supplier. Payload: `{ "name": "...", "description": "...", "displayOrder": 1, "surveyId": "3" }`.
 - `POST /api/suppliers/assign` &mdash; attach an existing survey to a supplier (replaces previous associations if needed).
 - `GET /api/suppliers/next?currentSurveyId=2` &mdash; retrieve the next supplier survey in sequence. Omit `currentSurveyId` to get the first survey.
-- `GET /api/create?name=...&supplierId=1&isSupplierEvaluation=true` &mdash; create a new survey and bind it to a supplier. Set `isSupplierEvaluation=false` to create a standalone survey that is not tied to any supplier.
+- `GET /api/surveys/templates` &mdash; list built-in survey templates (IDs prefixed with `default-`).
+- `GET /api/create?name=...&supplierId=1&isSupplierEvaluation=true&templateId=default-1` &mdash; create a new survey and bind it to a supplier. Omit `supplierId` or set `isSupplierEvaluation=false` for standalone surveys. Use `templateId` (`default-*` or `existing-*`) to clone a template; leave blank for an empty survey.
 - `POST /api/post` accepts an optional `supplierId` alongside the existing payload so responses can be attributed to a supplier.
 
 ## Client-Side App

@@ -67,9 +67,9 @@ namespace surveyjs_aspnet_mvc.Controllers
         }
 
         [HttpGet("create")]
-        public async Task<IActionResult> Create(string name = null, int? supplierId = null, bool isSupplierEvaluation = true)
+        public async Task<IActionResult> Create(string name = null, int? supplierId = null, bool isSupplierEvaluation = true, string templateId = null)
         {
-            var survey = await _surveyRepository.CreateSurveyAsync(name, isSupplierEvaluation, supplierId);
+            var survey = await _surveyRepository.CreateSurveyAsync(name, isSupplierEvaluation, supplierId, templateId);
             return Json(survey);
         }
 
@@ -189,6 +189,13 @@ namespace surveyjs_aspnet_mvc.Controllers
         {
             var survey = await _surveyRepository.GetNextSupplierSurveyAsync(currentSurveyId);
             return Json(survey);
+        }
+
+        [HttpGet("surveys/templates")]
+        public async Task<IActionResult> GetSurveyTemplates()
+        {
+            var templates = await _surveyRepository.GetSurveyTemplatesAsync();
+            return Json(templates);
         }
 
         // // GET api/values/5

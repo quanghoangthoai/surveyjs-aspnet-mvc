@@ -45,12 +45,64 @@ namespace surveyjs_aspnet_mvc.Services
             return survey == null ? null : ToDefinition(survey, survey.Supplier?.Id);
         }
 
-        public async Task<SurveyDefinition> CreateSurveyAsync(string? name, bool isSupplierEvaluation = true, int? supplierId = null)
+        public async Task<SurveyDefinition> CreateSurveyAsync(string? name, bool isSupplierEvaluation = true, int? supplierId = null, string? templateId = null)
         {
+            var templateJson = "{}";
+            var templateName = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(templateId))
+            {
+                string? rawTemplateId = null;
+                if (templateId.StartsWith("default-", StringComparison.OrdinalIgnoreCase))
+                {
+                    rawTemplateId = templateId.Substring("default-".Length);
+                    var template = SurveyDefinition.GetDefaultSurveys().FirstOrDefault(t => t.id == rawTemplateId);
+                    if (template != null)
+                    {
+                        templateJson = template.json;
+                        templateName = template.name;
+                    }
+                }
+                else if (templateId.StartsWith("existing-", StringComparison.OrdinalIgnoreCase))
+                {
+                    rawTemplateId = templateId.Substring("existing-".Length);
+                    if (TryParseId(rawTemplateId, out var templateSurveyId))
+                    {
+                        var existingTemplate = await _context.Surveys.AsNoTracking().FirstOrDefaultAsync(s => s.Id == templateSurveyId);
+                        if (existingTemplate != null)
+                        {
+                            templateJson = existingTemplate.Json;
+                            templateName = existingTemplate.Name;
+                        }
+                    }
+                }
+                else
+                {
+                    rawTemplateId = templateId;
+                    var template = SurveyDefinition.GetDefaultSurveys().FirstOrDefault(t => t.id == rawTemplateId);
+                    if (template != null)
+                    {
+                        templateJson = template.json;
+                        templateName = template.name;
+                    }
+                    else if (TryParseId(rawTemplateId, out var templateSurveyId))
+                    {
+                        var existingTemplate = await _context.Surveys.AsNoTracking().FirstOrDefaultAsync(s => s.Id == templateSurveyId);
+                        if (existingTemplate != null)
+                        {
+                            templateJson = existingTemplate.Json;
+                            templateName = existingTemplate.Name;
+                        }
+                    }
+                }
+            }
+
             var survey = new Survey
             {
-                Name = string.IsNullOrWhiteSpace(name) ? string.Empty : name,
-                Json = "{}",
+                Name = string.IsNullOrWhiteSpace(name)
+                    ? (string.IsNullOrWhiteSpace(templateName) ? string.Empty : templateName)
+                    : name,
+                Json = string.IsNullOrWhiteSpace(templateJson) ? "{}" : templateJson,
                 CreatedAt = DateTime.UtcNow,
                 IsSupplierEvaluation = isSupplierEvaluation
             };
@@ -58,7 +110,7 @@ namespace surveyjs_aspnet_mvc.Services
             _context.Surveys.Add(survey);
             await _context.SaveChangesAsync();
 
-            if (string.IsNullOrWhiteSpace(name))
+            if (string.IsNullOrWhiteSpace(name) && string.IsNullOrWhiteSpace(templateName))
             {
                 survey.Name = $"New Survey {survey.Id}";
                 await _context.SaveChangesAsync();
@@ -321,6 +373,19 @@ namespace surveyjs_aspnet_mvc.Services
             }
 
             return ToDefinition(targetSupplier.Survey, targetSupplier.Id);
+        }
+
+        public Task<IEnumerable<SurveyDefinition>> GetSurveyTemplatesAsync()
+        {
+            var templates = SurveyDefinition.GetDefaultSurveys()
+                .Select(t => new SurveyDefinition
+                {
+                    id = $"default-{t.id}",
+                    name = t.name,
+                    json = t.json,
+                    isSupplierEvaluation = t.isSupplierEvaluation
+                });
+            return Task.FromResult(templates);
         }
 
         private static SurveyDefinition ToDefinition(Survey survey, int? supplierId = null)

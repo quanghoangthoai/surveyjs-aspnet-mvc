@@ -122,6 +122,20 @@
     .muted {
       color: #52606d;
     }
+    .toggle-row {
+      margin-top: 1rem;
+    }
+    .checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+    .checkbox input {
+      width: auto;
+      height: 1rem;
+      width: 1rem;
+    }
     @media (max-width: 640px) {
       header {
         padding: 1rem 1.25rem;
@@ -178,6 +192,46 @@
     </section>
 
     <section class="card">
+      <h2>Create Survey</h2>
+      <p class="muted">Create a new survey by selecting a template or starting from a blank form. Optionally link it to a supplier so it appears in the NCC workflow.</p>
+
+      <div id="surveyFeedback" role="status" aria-live="polite"></div>
+
+      <form id="surveyForm" novalidate>
+        <div class="form-grid">
+          <div>
+            <label for="surveyName">Survey Name</label>
+            <input id="surveyName" name="surveyName" type="text" placeholder="Leave empty to use template name" />
+          </div>
+          <div>
+            <label for="surveySupplier">Supplier</label>
+            <select id="surveySupplier" name="supplierId">
+              <option value="">(Standalone survey)</option>
+            </select>
+          </div>
+          <div>
+            <label for="surveyTemplate">Template</label>
+            <select id="surveyTemplate" name="templateId">
+              <option value="">Blank survey</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <label class="checkbox">
+            <input type="checkbox" id="surveyIsSupplier" name="isSupplierEvaluation" checked />
+            <span>Survey evaluates a supplier</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit">Create Survey</button>
+          <button type="button" id="surveyResetButton">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card">
       <h2>Suppliers</h2>
       <p class="muted">Suppliers are listed in processing order. After respondents finish one supplier survey, the next one is served automatically.</p>
 
@@ -205,8 +259,19 @@
     const feedback = document.getElementById('feedback');
     const surveySelect = document.getElementById('surveySelect');
     const suppliersTableBody = document.getElementById('suppliersTableBody');
-
     const resetButton = document.getElementById('resetButton');
+
+    const surveyForm = document.getElementById('surveyForm');
+    const surveyFeedback = document.getElementById('surveyFeedback');
+    const surveyName = document.getElementById('surveyName');
+    const surveySupplierSelect = document.getElementById('surveySupplier');
+    const surveyTemplateSelect = document.getElementById('surveyTemplate');
+    const surveyIsSupplierCheckbox = document.getElementById('surveyIsSupplier');
+    const surveyResetButton = document.getElementById('surveyResetButton');
+
+    let cachedSurveys = [];
+    let cachedSuppliers = [];
+    let cachedTemplates = [];
 
     function showMessage(type, text) {
       feedback.innerHTML = '';
@@ -217,6 +282,17 @@
       message.className = `message ${type}`;
       message.textContent = text;
       feedback.appendChild(message);
+    }
+
+    function showSurveyMessage(type, text) {
+      surveyFeedback.innerHTML = '';
+      if (!text) {
+        return;
+      }
+      const message = document.createElement('div');
+      message.className = `message ${type}`;
+      message.textContent = text;
+      surveyFeedback.appendChild(message);
     }
 
     async function fetchJson(url, options) {
@@ -233,18 +309,83 @@
       surveySelect.innerHTML = '<option value="">(No survey)</option>';
       try {
         const surveys = await fetchJson('/api/getActive');
-        surveys
-          .filter(s => s)
-          .forEach(survey => {
-            const option = document.createElement('option');
-            option.value = survey.id;
-            option.textContent = `${survey.name} (ID: ${survey.id})${survey.isSupplierEvaluation ? '' : ' — standalone'}`;
-            surveySelect.appendChild(option);
-          });
+        cachedSurveys = Array.isArray(surveys) ? surveys.filter(Boolean) : [];
+        cachedSurveys.forEach(survey => {
+          const option = document.createElement('option');
+          option.value = survey.id;
+          option.textContent = `${survey.name} (ID: ${survey.id})${survey.isSupplierEvaluation ? '' : ' — standalone'}`;
+          surveySelect.appendChild(option);
+        });
+        refreshSurveyTemplateOptions();
       } catch (error) {
         showMessage('error', `Unable to load surveys: ${error.message}`);
       } finally {
         surveySelect.disabled = false;
+      }
+    }
+
+    function refreshSurveyTemplateOptions() {
+      if (!surveyTemplateSelect) {
+        return;
+      }
+
+      const previousValue = surveyTemplateSelect.value;
+      surveyTemplateSelect.innerHTML = '';
+
+      const blankOption = document.createElement('option');
+      blankOption.value = '';
+      blankOption.textContent = 'Blank survey';
+      surveyTemplateSelect.appendChild(blankOption);
+
+      if (cachedTemplates.length) {
+        const templateGroup = document.createElement('optgroup');
+        templateGroup.label = 'Default templates';
+        cachedTemplates.forEach(template => {
+          const option = document.createElement('option');
+          option.value = template.id;
+          option.textContent = template.name;
+          templateGroup.appendChild(option);
+        });
+        surveyTemplateSelect.appendChild(templateGroup);
+      }
+
+      if (cachedSurveys.length) {
+        const existingGroup = document.createElement('optgroup');
+        existingGroup.label = 'Existing surveys';
+        cachedSurveys.forEach(survey => {
+          const option = document.createElement('option');
+          option.value = `existing-${survey.id}`;
+          option.textContent = `${survey.name} (ID: ${survey.id})`;
+          existingGroup.appendChild(option);
+        });
+        surveyTemplateSelect.appendChild(existingGroup);
+      }
+
+      const hasPrevious = Array.from(surveyTemplateSelect.options).some(option => option.value === previousValue);
+      surveyTemplateSelect.value = hasPrevious ? previousValue : '';
+    }
+
+    function populateSupplierOptions(suppliers) {
+      if (!surveySupplierSelect) {
+        return;
+      }
+
+      const previousValue = surveySupplierSelect.value;
+      surveySupplierSelect.innerHTML = '<option value="">(Standalone survey)</option>';
+
+      suppliers.forEach(supplier => {
+        const option = document.createElement('option');
+        option.value = supplier.id;
+        const suffix = supplier.surveyId ? ` — has survey ${supplier.surveyId}` : '';
+        option.textContent = `${supplier.name}${suffix}`;
+        surveySupplierSelect.appendChild(option);
+      });
+
+      const hasPrevious = Array.from(surveySupplierSelect.options).some(option => option.value === previousValue);
+      surveySupplierSelect.value = hasPrevious ? previousValue : '';
+      if (!surveyIsSupplierCheckbox.checked) {
+        surveySupplierSelect.value = '';
+        surveySupplierSelect.disabled = true;
       }
     }
 
@@ -275,10 +416,25 @@
       suppliersTableBody.innerHTML = '<tr><td colspan="5" class="muted">Loading suppliers...</td></tr>';
       try {
         const suppliers = await fetchJson('/api/suppliers');
-        renderSuppliers(suppliers);
+        cachedSuppliers = Array.isArray(suppliers) ? suppliers : [];
+        renderSuppliers(cachedSuppliers);
+        populateSupplierOptions(cachedSuppliers);
       } catch (error) {
         suppliersTableBody.innerHTML = '<tr><td colspan="5" class="muted">Failed to load suppliers.</td></tr>';
         showMessage('error', `Unable to load suppliers: ${error.message}`);
+      }
+    }
+
+    async function loadSurveyTemplates() {
+      showSurveyMessage('', '');
+      try {
+        const templates = await fetchJson('/api/surveys/templates');
+        cachedTemplates = Array.isArray(templates) ? templates : [];
+      } catch (error) {
+        cachedTemplates = [];
+        showSurveyMessage('error', `Unable to load default templates: ${error.message}`);
+      } finally {
+        refreshSurveyTemplateOptions();
       }
     }
 
@@ -322,13 +478,71 @@
       }
     });
 
+    surveyForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      showSurveyMessage('', '');
+
+      const name = surveyName.value.trim();
+      const supplierIdValue = surveySupplierSelect.disabled ? '' : surveySupplierSelect.value.trim();
+      const templateId = surveyTemplateSelect.value;
+      const isSupplierEvaluation = surveyIsSupplierCheckbox.checked;
+
+      const params = new URLSearchParams();
+      if (name) {
+        params.append('name', name);
+      }
+      params.append('isSupplierEvaluation', String(isSupplierEvaluation));
+      if (isSupplierEvaluation && supplierIdValue) {
+        params.append('supplierId', supplierIdValue);
+      }
+      if (templateId) {
+        params.append('templateId', templateId);
+      }
+
+      const url = `/api/create${params.toString() ? `?${params.toString()}` : ''}`;
+
+      try {
+        const createdSurvey = await fetchJson(url);
+        showSurveyMessage('success', `Survey "${createdSurvey.name}" created successfully.`);
+        surveyForm.reset();
+        surveyIsSupplierCheckbox.checked = true;
+        surveySupplierSelect.disabled = false;
+        await Promise.all([loadSurveys(), loadSuppliers()]);
+      } catch (error) {
+        showSurveyMessage('error', `Failed to create survey: ${error.message}`);
+      }
+    });
+
+    surveyResetButton.addEventListener('click', () => {
+      surveyForm.reset();
+      surveyIsSupplierCheckbox.checked = true;
+      surveySupplierSelect.disabled = false;
+      showSurveyMessage('', '');
+    });
+
+    surveyIsSupplierCheckbox.addEventListener('change', () => {
+      if (surveyIsSupplierCheckbox.checked) {
+        surveySupplierSelect.disabled = false;
+      } else {
+        surveySupplierSelect.disabled = true;
+        surveySupplierSelect.value = '';
+      }
+    });
+
+    surveySupplierSelect.addEventListener('change', () => {
+      if (surveySupplierSelect.value) {
+        surveyIsSupplierCheckbox.checked = true;
+        surveySupplierSelect.disabled = false;
+      }
+    });
+
     resetButton.addEventListener('click', () => {
       supplierForm.reset();
       showMessage('', '');
     });
 
     window.addEventListener('DOMContentLoaded', async () => {
-      await Promise.all([loadSurveys(), loadSuppliers()]);
+      await Promise.all([loadSurveyTemplates(), loadSurveys(), loadSuppliers()]);
     });
   </script>
 </body>
