@@ -35,14 +35,14 @@ namespace surveyjs_aspnet_mvc
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseRouting();
             app.UseDefaultFiles();
             app.UseStaticFiles();
+
+            app.UseRouting();
 
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
             });
-
         }
     }
 }
