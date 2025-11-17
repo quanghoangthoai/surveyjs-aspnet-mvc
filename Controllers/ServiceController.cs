@@ -22,7 +22,8 @@ namespace surveyjs_aspnet_mvc.Controllers
         public string surveyResultText { get; set; }
     }
 
-    [Route("/api")]
+    [ApiController]
+    [Route("api")]
     public class ServiceController : Controller
     {
         private JObject GetSurveyObject(SurveyDefinition survey)
@@ -37,9 +38,26 @@ namespace surveyjs_aspnet_mvc.Controllers
         [HttpGet("getActive")]
         public ContentResult GetActive()
         {
-            var db = new SessionStorage(HttpContext.Session);
-            var result = db.GetSurveys().Select(survey => GetSurveyObject(survey));
-            return Content(JsonConvert.SerializeObject(result), "application/json");
+            try
+            {
+                // Check if session is available
+                if (HttpContext.Session == null)
+                {
+                    return Content(JsonConvert.SerializeObject(new { error = "Session not available" }), "application/json");
+                }
+
+                var db = new SessionStorage(HttpContext.Session);
+                var result = db.GetSurveys().Select(survey => GetSurveyObject(survey));
+                return Content(JsonConvert.SerializeObject(result), "application/json");
+            }
+            catch (Exception ex)
+            {
+                // Return detailed error for debugging
+                return Content(JsonConvert.SerializeObject(new { 
+                    error = ex.Message, 
+                    stackTrace = ex.StackTrace 
+                }), "application/json");
+            }
         }
 
         [HttpGet("getSurvey")]

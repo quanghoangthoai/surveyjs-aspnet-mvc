@@ -26,13 +26,28 @@ namespace surveyjs_aspnet_mvc
         {
             services.AddMvc();
 
+            // Configure CORS
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll",
+                    builder =>
+                    {
+                        builder.AllowAnyOrigin()
+                               .AllowAnyMethod()
+                               .AllowAnyHeader();
+                    });
+            });
+
             // Adds a default in-memory implementation of IDistributedCache.
             services.AddDistributedMemoryCache();
 
             services.AddSession(options => {
                 // Set a short timeout for easy testing.
-                options.IdleTimeout = TimeSpan.FromSeconds(300);
+                options.IdleTimeout = TimeSpan.FromSeconds(3600); // Increase to 1 hour
                 options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true; // Essential for session to work
+                options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.None; // Allow HTTP and HTTPS
+                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // Important for cross-site requests
             });
 
         }
@@ -43,6 +58,9 @@ namespace surveyjs_aspnet_mvc
             if (env.IsDevelopment()) {
                 app.UseDeveloperExceptionPage();
             }
+
+            // Enable CORS
+            app.UseCors("AllowAll");
 
             app.UseSession();
             app.UseRouting();
