@@ -27,6 +27,8 @@ namespace surveyjs_aspnet_mvc
                 {
                     var logger = services.GetRequiredService<ILogger<Program>>();
                     logger.LogError(ex, "An error occurred while migrating or initializing the database.");
+                    // Continue running even if database migration fails for debugging
+                    Console.WriteLine($"Database Error: {ex.Message}");
                 }
             }
 
