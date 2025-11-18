@@ -43,7 +43,7 @@ namespace surveyjs_aspnet_mvc.Controllers
             try
             {
                 var result = await _surveyRepository.GetActiveAsync();
-                return Json(result);
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -69,14 +69,14 @@ namespace surveyjs_aspnet_mvc.Controllers
                 return NotFound();
             }
 
-            return Json(survey);
+            return Ok(survey);
         }
 
         [HttpGet("create")]
         public async Task<IActionResult> Create(string name)
         {
             var survey = await _surveyRepository.CreateSurveyAsync(name);
-            return Json(survey);
+            return Ok(survey);
         }
 
         [HttpGet("changeName")]
@@ -93,7 +93,7 @@ namespace surveyjs_aspnet_mvc.Controllers
                 return NotFound();
             }
 
-            return Json("Ok");
+            return Ok("Ok");
         }
 
         [HttpPost("changeJson")]
@@ -110,7 +110,7 @@ namespace surveyjs_aspnet_mvc.Controllers
                 return NotFound();
             }
 
-            return Json(survey);
+            return Ok(survey);
         }
 
         [HttpGet("delete")]
@@ -127,7 +127,7 @@ namespace surveyjs_aspnet_mvc.Controllers
                 return NotFound();
             }
 
-            return Json(new { id = id });
+            return Ok(new { id = id });
         }
 
         [HttpPost("post")]
@@ -139,7 +139,7 @@ namespace surveyjs_aspnet_mvc.Controllers
             }
 
             await _surveyRepository.PostResultAsync(model.postId, model.surveyResultText);
-            return Json(new { });
+            return Ok(new { });
         }
 
         [HttpGet("results")]
@@ -151,7 +151,7 @@ namespace surveyjs_aspnet_mvc.Controllers
             }
 
             var results = await _surveyRepository.GetResultsAsync(postId);
-            return Json(results);
+            return Ok(results);
         }
 
         // // GET api/values/5
