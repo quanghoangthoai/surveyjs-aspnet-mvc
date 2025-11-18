@@ -64,6 +64,9 @@ namespace surveyjs_aspnet_mvc
             // Enable CORS
             app.UseCors("AllowAll");
 
+            // Uncomment and change if deploying to subfolder (e.g., http://server.com/myapp/)
+            // app.UsePathBase("/myapp");
+
             app.UseDefaultFiles();
             app.UseStaticFiles();
             
