@@ -15,11 +15,23 @@ Install [.NET](https://dotnet.microsoft.com/en-us/download) on your machine. Aft
 ```bash
 git clone https://github.com/surveyjs/surveyjs-aspnet-mvc.git
 cd surveyjs-aspnet-mvc
+dotnet tool install --global dotnet-ef # optional if not already installed
+dotnet restore
+dotnet ef database update
 dotnet build
 dotnet run
 ```
 
 Open http://localhost:5000 in your web browser.
+
+## Database Configuration
+
+The backend stores survey definitions and responses in SQL Server using Entity Framework Core.
+
+- Update the `DefaultConnection` string in `appsettings.json` or `appsettings.Development.json` to point to your SQL Server instance.
+- To generate new migrations after making model changes, run `dotnet ef migrations add <MigrationName>`.
+- Apply pending migrations with `dotnet ef database update`.
+- The application seeds default surveys and sample results automatically on startup.
 
 ## Client-Side App
 

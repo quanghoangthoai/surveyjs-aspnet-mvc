@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Web;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using surveyjs_aspnet_mvc.Services;
 
 namespace surveyjs_aspnet_mvc.Controllers
 {
@@ -26,17 +21,15 @@ namespace surveyjs_aspnet_mvc.Controllers
     [Route("api")]
     public class ServiceController : Controller
     {
-        private JObject GetSurveyObject(SurveyDefinition survey)
+        private readonly ISurveyRepository _surveyRepository;
+
+        public ServiceController(ISurveyRepository surveyRepository)
         {
-            var jobj = new JObject();
-            jobj["id"] = survey.id;
-            jobj["name"] = survey.name;
-            jobj["json"] = JsonConvert.DeserializeObject(survey.json) as JObject;
-            return jobj;
+            _surveyRepository = surveyRepository;
         }
 
         [HttpGet("getActive")]
-        public ContentResult GetActive()
+        public async Task<IActionResult> GetActive()
         {
             try
             {
@@ -61,58 +54,102 @@ namespace surveyjs_aspnet_mvc.Controllers
         }
 
         [HttpGet("getSurvey")]
-        public JsonResult GetSurvey(string surveyId)
+        public async Task<IActionResult> GetSurvey(string surveyId)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            return Json(db.GetSurvey(surveyId));
+            if (string.IsNullOrWhiteSpace(surveyId))
+            {
+                return BadRequest("Survey id is required.");
+            }
+
+            var survey = await _surveyRepository.GetSurveyAsync(surveyId);
+            if (survey == null)
+            {
+                return NotFound();
+            }
+
+            return Json(survey);
         }
 
         [HttpGet("create")]
-        public JsonResult Create(string name)
+        public async Task<IActionResult> Create(string name)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            return Json(db.CreateSurvey(name));
+            var survey = await _surveyRepository.CreateSurveyAsync(name);
+            return Json(survey);
         }
 
         [HttpGet("changeName")]
-        public JsonResult ChangeName(string id, string name)
+        public async Task<IActionResult> ChangeName(string id, string name)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            db.ChangeName(id, name);
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest("Survey id is required.");
+            }
+
+            var success = await _surveyRepository.ChangeNameAsync(id, name);
+            if (!success)
+            {
+                return NotFound();
+            }
+
             return Json("Ok");
         }
 
         [HttpPost("changeJson")]
-        public ContentResult ChangeJson([FromBody] ChangeSurveyModel model)
+        public async Task<IActionResult> ChangeJson([FromBody] ChangeSurveyModel model)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            db.StoreSurvey(model.id, model.text);
-            var survey = db.GetSurvey(model.id);
-            var result = GetSurveyObject(survey);
-            return Content(JsonConvert.SerializeObject(result), "application/json");
+            if (model == null || string.IsNullOrWhiteSpace(model.id))
+            {
+                return BadRequest("Survey id is required.");
+            }
+
+            var survey = await _surveyRepository.UpdateSurveyJsonAsync(model.id, model.text);
+            if (survey == null)
+            {
+                return NotFound();
+            }
+
+            return Json(survey);
         }
 
         [HttpGet("delete")]
-        public JsonResult Delete(string id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            db.DeleteSurvey(id);
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return BadRequest("Survey id is required.");
+            }
+
+            var success = await _surveyRepository.DeleteSurveyAsync(id);
+            if (!success)
+            {
+                return NotFound();
+            }
+
             return Json(new { id = id });
         }
 
         [HttpPost("post")]
-        public JsonResult PostResult([FromBody] PostSurveyResultModel model)
+        public async Task<IActionResult> PostResult([FromBody] PostSurveyResultModel model)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            db.PostResults(model.postId, model.surveyResultText);
+            if (model == null || string.IsNullOrWhiteSpace(model.postId))
+            {
+                return BadRequest("postId is required.");
+            }
+
+            await _surveyRepository.PostResultAsync(model.postId, model.surveyResultText);
             return Json(new { });
         }
 
         [HttpGet("results")]
-        public JsonResult GetResults(string postId)
+        public async Task<IActionResult> GetResults(string postId)
         {
-            var db = new SessionStorage(HttpContext.Session);
-            return Json(db.GetResults(postId));
+            if (string.IsNullOrWhiteSpace(postId))
+            {
+                return BadRequest("postId is required.");
+            }
+
+            var results = await _surveyRepository.GetResultsAsync(postId);
+            return Json(results);
         }
 
         // // GET api/values/5

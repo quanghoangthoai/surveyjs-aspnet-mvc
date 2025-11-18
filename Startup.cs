@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
+using surveyjs_aspnet_mvc.Data;
+using surveyjs_aspnet_mvc.Services;
 
 namespace surveyjs_aspnet_mvc
 {
@@ -21,10 +18,10 @@ namespace surveyjs_aspnet_mvc
 
         public IConfiguration Configuration { get; }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc();
+            services.AddControllers()
+                .AddNewtonsoftJson();
 
             // Configure CORS
             services.AddCors(options =>
@@ -50,9 +47,9 @@ namespace surveyjs_aspnet_mvc
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax; // Important for cross-site requests
             });
 
+            services.AddScoped<ISurveyRepository, SurveyRepository>();
         }
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             if (env.IsDevelopment()) {
