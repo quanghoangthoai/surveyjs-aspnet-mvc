@@ -22,13 +22,19 @@ namespace surveyjs_aspnet_mvc.Controllers
 
     [ApiController]
     [Route("api")]
-    public class ServiceController : Controller
+    public class ServiceController : ControllerBase
     {
         private readonly ISurveyRepository _surveyRepository;
 
         public ServiceController(ISurveyRepository surveyRepository)
         {
             _surveyRepository = surveyRepository;
+        }
+
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok(new { message = "API is working!", timestamp = DateTime.Now });
         }
 
         [HttpGet("getActive")]

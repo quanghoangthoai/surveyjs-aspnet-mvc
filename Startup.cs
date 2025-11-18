@@ -64,10 +64,11 @@ namespace surveyjs_aspnet_mvc
             // Enable CORS
             app.UseCors("AllowAll");
 
-            app.UseSession();
-            app.UseRouting();
             app.UseDefaultFiles();
             app.UseStaticFiles();
+            
+            app.UseRouting();
+            app.UseSession();
 
             app.UseEndpoints(endpoints => {
                 endpoints.MapControllers();
