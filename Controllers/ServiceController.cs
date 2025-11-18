@@ -1,5 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using surveyjs_aspnet_mvc.Services;
 
 namespace surveyjs_aspnet_mvc.Controllers
@@ -33,15 +36,8 @@ namespace surveyjs_aspnet_mvc.Controllers
         {
             try
             {
-                // Check if session is available
-                if (HttpContext.Session == null)
-                {
-                    return Content(JsonConvert.SerializeObject(new { error = "Session not available" }), "application/json");
-                }
-
-                var db = new SessionStorage(HttpContext.Session);
-                var result = db.GetSurveys().Select(survey => GetSurveyObject(survey));
-                return Content(JsonConvert.SerializeObject(result), "application/json");
+                var result = await _surveyRepository.GetActiveAsync();
+                return Json(result);
             }
             catch (Exception ex)
             {
