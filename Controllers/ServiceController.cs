@@ -72,15 +72,17 @@ namespace surveyjs_aspnet_mvc.Controllers
             return Ok(survey);
         }
 
-        [HttpGet("create")]
-        public async Task<IActionResult> Create(string name)
+        [HttpPost("create")]
+        [HttpGet("create")] // Hỗ trợ GET để tương thích với frontend cũ
+        public async Task<IActionResult> Create([FromQuery] string name)
         {
             var survey = await _surveyRepository.CreateSurveyAsync(name);
             return Ok(survey);
         }
 
-        [HttpGet("changeName")]
-        public async Task<IActionResult> ChangeName(string id, string name)
+        [HttpPut("changeName")]
+        [HttpGet("changeName")] // Hỗ trợ GET để tương thích với frontend cũ
+        public async Task<IActionResult> ChangeName([FromQuery] string id, [FromQuery] string name)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -113,8 +115,9 @@ namespace surveyjs_aspnet_mvc.Controllers
             return Ok(survey);
         }
 
-        [HttpGet("delete")]
-        public async Task<IActionResult> Delete(string id)
+        [HttpDelete("delete")]
+        [HttpGet("delete")] // Hỗ trợ GET để tương thích với frontend cũ
+        public async Task<IActionResult> Delete([FromQuery] string id)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
