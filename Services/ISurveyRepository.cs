@@ -14,6 +14,12 @@ namespace surveyjs_aspnet_mvc.Services
         Task<bool> DeleteSurveyAsync(string surveyId);
         Task PostResultAsync(string postId, string resultJson);
         Task<SurveyResultsDefinition> GetResultsAsync(string postId);
+        
+        // Debug and maintenance methods
+        Task<bool> CanConnectAsync();
+        Task<int> GetSurveyCountAsync();
+        Task<int> GetResponseCountAsync();
+        Task SeedDefaultDataAsync();
     }
 }
 

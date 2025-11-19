@@ -169,6 +169,48 @@ namespace surveyjs_aspnet_mvc.Services
         {
             return int.TryParse(value, out id);
         }
+
+        // Debug and maintenance methods
+        public async Task<bool> CanConnectAsync()
+        {
+            try
+            {
+                return await _context.Database.CanConnectAsync();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<int> GetSurveyCountAsync()
+        {
+            try
+            {
+                return await _context.Surveys.CountAsync();
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        public async Task<int> GetResponseCountAsync()
+        {
+            try
+            {
+                return await _context.SurveyResponses.CountAsync();
+            }
+            catch
+            {
+                return -1;
+            }
+        }
+
+        public async Task SeedDefaultDataAsync()
+        {
+            await Data.DatabaseSeeder.SeedAsync(_context);
+        }
     }
 }
 

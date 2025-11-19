@@ -37,20 +37,94 @@ namespace surveyjs_aspnet_mvc.Controllers
             return Ok(new { message = "API is working!", timestamp = DateTime.Now });
         }
 
+        [HttpGet("debug")]
+        public async Task<IActionResult> Debug()
+        {
+            try
+            {
+                var canConnect = await _surveyRepository.CanConnectAsync();
+                var surveyCount = await _surveyRepository.GetSurveyCountAsync();
+                var responseCount = await _surveyRepository.GetResponseCountAsync();
+                
+                var surveys = await _surveyRepository.GetActiveAsync();
+                var surveyList = surveys.Select(s => new { s.id, s.name }).ToList();
+
+                return Ok(new
+                {
+                    canConnect = canConnect,
+                    surveyCount = surveyCount,
+                    responseCount = responseCount,
+                    surveys = surveyList,
+                    timestamp = DateTime.Now,
+                    environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Not Set"
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new
+                {
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace,
+                    timestamp = DateTime.Now
+                });
+            }
+        }
+
+        [HttpPost("seedDatabase")]
+        [HttpGet("seedDatabase")]
+        public async Task<IActionResult> SeedDatabase()
+        {
+            try
+            {
+                await _surveyRepository.SeedDefaultDataAsync();
+                var count = await _surveyRepository.GetSurveyCountAsync();
+                
+                return Ok(new
+                {
+                    message = "Database seeded successfully",
+                    surveyCount = count,
+                    timestamp = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new
+                {
+                    error = ex.Message,
+                    innerError = ex.InnerException?.Message,
+                    stackTrace = ex.StackTrace,
+                    timestamp = DateTime.Now
+                });
+            }
+        }
+
         [HttpGet("getActive")]
         public async Task<IActionResult> GetActive()
         {
             try
             {
                 var result = await _surveyRepository.GetActiveAsync();
-                return Ok(result);
+                var resultList = result.ToList();
+                
+                Console.WriteLine($"[DEBUG] GetActive returned {resultList.Count} surveys");
+                foreach (var survey in resultList)
+                {
+                    Console.WriteLine($"[DEBUG] Survey: id={survey.id}, name={survey.name}");
+                }
+                
+                return Ok(resultList);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[ERROR] GetActive failed: {ex.Message}");
+                Console.WriteLine($"[ERROR] StackTrace: {ex.StackTrace}");
+                
                 // Return detailed error for debugging
                 return Content(JsonConvert.SerializeObject(new { 
                     error = ex.Message, 
-                    stackTrace = ex.StackTrace 
+                    stackTrace = ex.StackTrace,
+                    innerError = ex.InnerException?.Message
                 }), "application/json");
             }
         }
